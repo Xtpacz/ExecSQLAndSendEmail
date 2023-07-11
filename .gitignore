@@ -13,3 +13,14 @@ build
 
 # My configurations:
 config.ini
+.idea/deployment.xml
+.idea/ExecSQLAndSendEmail.iml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/sshConfigs.xml
+main.py
+queries.ini
+queries.py
+sql2.csv
+test.txt

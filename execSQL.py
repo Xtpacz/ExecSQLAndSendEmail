@@ -54,14 +54,13 @@ class MysqlSave:
         # 保存成csv 这个编码是为了防止中文没法保存，index=None的意思是没有行号
         df_dealed.to_csv(csv_file, index=None, encoding='utf_8_sig')
 
-
 if __name__ == '__main__':
 
     # 初始化类
-    # mysql = MysqlSave()
+    mysql = MysqlSave()
 
-    print(sql1)
-    # mysql.search_and_save(sql1, 'sql2.csv')
+    # 执行查询操作并保存至csv文件
+    mysql.search_and_save(sql1, 'sql2.csv')
 
     # 读取配置文件
     configFile = 'config.ini'
@@ -82,4 +81,4 @@ if __name__ == '__main__':
     at2 = filepath + '\\test.txt'
 
     attaches = [r''+at1, r''+at2]
-    # sendEmail.doEmail(receivers, attaches, password, sender)
+    sendEmail.doEmail(receivers, attaches, password, sender)

@@ -23,9 +23,6 @@ def send_mail(sender=None, password=None, receivers=None,
     else:
         print('邮件发送成功')
 
-
-# if __name__ == '__main__':
-
 def doEmail(receivers, attaches, password, sender):
     print('开始发邮件')
     contents = ["测试内容"]
