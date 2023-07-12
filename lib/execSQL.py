@@ -1,14 +1,11 @@
+import logging
+
 import pymysql
 import pandas as pd
-import xlwt
 import os
-import datetime
-import xlsxwriter
-from openpyxl import Workbook
 from openpyxl.reader.excel import load_workbook
-from openpyxl.worksheet.table import Table, TableStyleInfo
 
-import sendEmail
+from lib import sendEmail
 
 
 class MysqlSave:
@@ -93,6 +90,7 @@ class MysqlSave:
         df_dealed = pd.DataFrame(result_list, columns=title)
         # 保存成csv 这个编码是为了防止中文没法保存，index=None的意思是没有行号
         df_dealed.to_csv(file_path, index=None, encoding="utf_8_sig")
+        logging.info("get the csv file successfully")
 
     def check_folder_exists(self, file_path):
         """
@@ -104,25 +102,27 @@ class MysqlSave:
         if not os.path.exists(file_path):
             os.makedirs(file_path)
             print(f"Folder '{file_path}' created successfully.")
+            logging.info("folder created successfully")
         else:
             print(f"Folder '{file_path}' already exists.")
+            logging.info("folder already exists")
 
 
 def okgogogo(
-    host,
-    port,
-    user,
-    dbpassword,
-    charset,
-    mail_host,
-    sender,
-    password,
-    receiver,
-    subject,
-    content,
-    sqls_address,
-    sqls_name,
-    results_path,
+        host,
+        port,
+        user,
+        dbpassword,
+        charset,
+        mail_host,
+        sender,
+        password,
+        receiver,
+        subject,
+        content,
+        sqls_address,
+        sqls_name,
+        results_path,
 ):
     """
     导出报表以及发送邮件

@@ -1,5 +1,5 @@
 import json
-import execSQL
+from lib import execSQL
 import datetime
 import locale
 
@@ -13,7 +13,7 @@ def prepareAndHandle():
     weekday_today = current_date.strftime("%A")
     print("今天是：", weekday_today)
 
-    file_path = "..\\files\\config.json"
+    file_path = "../../files/config.json"
     # 读取JSON文件
     with open(file_path, "r", encoding="utf-8") as file:
         data = json.load(file)
@@ -72,7 +72,6 @@ def prepareAndHandle():
         # 解析查询文件保存位置
         results_path = data["results_path"]
         results_path = results_path + name + "\\" + str(today) + "\\"
-
         # 由于发送频率不高，可以每个人都重新链接数据库
         execSQL.okgogogo(
             host,

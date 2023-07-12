@@ -12,7 +12,6 @@ dist
 build
 
 # My configurations:
-config.ini
 .idea/deployment.xml
 .idea/ExecSQLAndSendEmail.iml
 .idea/inspectionProfiles/profiles_settings.xml

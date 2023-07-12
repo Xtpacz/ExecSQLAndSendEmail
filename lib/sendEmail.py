@@ -1,3 +1,5 @@
+import logging
+
 import yagmail
 
 
@@ -28,10 +30,12 @@ def send_mail(
         )
     except Exception as e:
         print("邮件发送失败", e)
+        logging.warning("send email failed")
     else:
         print("邮件发送成功")
+        logging.info("send email failed")
 
 
 def doEmail(mail_host, receivers, attaches, password, sender, subject, content):
-    print("开始发邮件")
+    logging.info("start send email")
     send_mail(sender, password, receivers, subject, content, attaches, mail_host)
