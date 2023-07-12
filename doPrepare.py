@@ -13,7 +13,7 @@ def prepareAndHandle():
     weekday_today = current_date.strftime("%A")
     print("今天是：", weekday_today)
 
-    file_path = "E:\\code\\mabang\\files\\config.json"
+    file_path = "..\\files\\config.json"
     # 读取JSON文件
     with open(file_path, "r", encoding="utf-8") as file:
         data = json.load(file)

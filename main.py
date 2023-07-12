@@ -8,7 +8,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 
 def report_task():
-     # doPrepare.prepareAndHandle()
+    doPrepare.prepareAndHandle()
 
 
 # Press the green button in the gutter to run the script.
