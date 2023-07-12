@@ -1,38 +1,31 @@
 import pymysql
 import pandas as pd
-import configparser
 import sendEmail
-
-# 从queries.py里面获取要执行的sql语句
-from queries import sql1
+import os
 
 class MysqlSave:
-
-    def __init__(self):
-        # 读取配置文件
-        configFile = 'config.ini'
-        con = configparser.ConfigParser()
-        con.read(configFile, encoding='utf-8')
-
-        # 设置连接数据库相关的主机、端口、用户名、密码
-        host = dict(con.items('dbhost'))['dbhost']
-        port = int(dict(con.items('dbport'))['dbport'])
-        user = dict(con.items('dbuser'))['dbuser']
-        passwd = dict(con.items('dbpwd'))['dbpwd']
-        charset = dict(con.items('dbcharset'))['dbcharset']
-
+    def __init__(self, host, port, user, dbpassword, charset):
+        """
+        初始化
+        :param host: mysql主机的ip
+        :param port: 端口
+        :param user: 数据库用户名
+        :param dbpassword: 数据库密码
+        :param charset: 使用字符集
+        """
         self.content = pymysql.Connect(
-            host=host,  # mysql的主机ip
-            port=port,  # 端口
-            user=user,  # 用户名
-            passwd=passwd,  # 数据库密码
-            charset=charset,  # 使用字符集
+            host=host,
+            port=port,
+            user=user,
+            passwd=dbpassword,
+            charset=charset,
         )
         self.cursor = self.content.cursor()
+        print('数据库链接成功')
 
     def search_and_save(self, sql, csv_file):
         """
-        导出为csv的函数
+        执行查询语句并导出为csv的函数
         :param sql: 要执行的mysql指令
         :param csv_file: 导出的csv文件名
         :return: 
@@ -54,31 +47,53 @@ class MysqlSave:
         # 保存成csv 这个编码是为了防止中文没法保存，index=None的意思是没有行号
         df_dealed.to_csv(csv_file, index=None, encoding='utf_8_sig')
 
-if __name__ == '__main__':
+    def check_folder_exists(self, folder_path):
+        """
+        检查目标文件夹是否存在，若不存在则创建
+        :param folder_path: 待检测的文件夹的路径
+        :return:
+        """
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+            print(f"Folder '{folder_path}' created successfully.")
+        else:
+            print(f"Folder '{folder_path}' already exists.")
 
+def okgogogo(host, port, user, dbpassword, charset ,mail_host, sender, password, receiver, subject, content, sqls_address, sqls_name, results_path):
+    """
+    导出报表以及发送邮件
+    :param host: mysql主机ip
+    :param port: 端口
+    :param user: 数据库用户名
+    :param dbpassword: 数据库密码
+    :param charset: 字符集
+    :param mail_host: 发送者邮箱的host
+    :param sender: 发送者邮箱
+    :param password: 邮箱授权码
+    :param receiver: 接收者邮箱
+    :param subject: 邮件主题
+    :param content: 邮件内容
+    :param sqls_address: SQL语句的位置
+    :param sqls_name: SQL语句的名字
+    :param results_path: 导出的报表保存的位置
+    :return:
+    """
     # 初始化类
-    mysql = MysqlSave()
+    mysql = MysqlSave(host, int(port), user, dbpassword, charset)
 
-    # 执行查询操作并保存至csv文件
-    mysql.search_and_save(sql1, 'sql2.csv')
+    mysql.check_folder_exists(results_path)
 
-    # 读取配置文件
-    configFile = 'config.ini'
-    con = configparser.ConfigParser()
-    con.read(configFile, encoding='utf-8')
+    for i in range(len(sqls_name)):
+        file_name = results_path + sqls_name[i] + '.csv'
+        print("file_name = " + file_name)
+        with open(sqls_address[i], "r", encoding='utf-8') as file:
+            sql_content = file.read()
+        mysql.search_and_save(sql_content, r''+file_name)
 
-    # 设置邮箱授权码、发送人、接收人
-    password = dict(con.items('password'))['password']
-    sender = dict(con.items('sender'))['sender']
-    receivers = []
-    receivers_dict = dict(con.items('receivers'))
-    for key in receivers_dict:
-        receivers.append(receivers_dict[key])
+    attaches = []
+    for i in range(len(sqls_name)):
+        full_path = results_path + sqls_name[i] + '.csv'
+        attaches.append(full_path)
+        print(full_path)
 
-    # 要发送的文件所在的文件夹
-    filepath = dict(con.items('filepath'))['filepath']
-    at1 = filepath + 'sql2.csv'
-    at2 = filepath + '\\test.txt'
-
-    attaches = [r''+at1, r''+at2]
-    sendEmail.doEmail(receivers, attaches, password, sender)
+    sendEmail.doEmail(mail_host, receiver, attaches, password, sender, subject, content)

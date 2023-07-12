@@ -1,9 +1,8 @@
 # 示例：登陆邮箱，并发送一封邮件；自己的163邮箱，给自己的qq邮箱发，不打扰别人
 import yagmail
-import schedule
 
 def send_mail(sender=None, password=None, receivers=None,
-              subject='重新测试定时发送报表', contents=None, attaches=None, host='smtp.163.com'):
+              subject=None, contents=None, attaches=None, host=None):
     """
     定时发送报表
     :param sender:发件人
@@ -23,13 +22,7 @@ def send_mail(sender=None, password=None, receivers=None,
     else:
         print('邮件发送成功')
 
-def doEmail(receivers, attaches, password, sender):
+def doEmail(mail_host, receivers, attaches, password, sender, subject, content):
+
     print('开始发邮件')
-    contents = ["测试内容"]
-    schedule.every(30).seconds.do(send_mail, sender=sender,
-                                  password=password,
-                                 receivers=receivers,
-                                 contents=contents,
-                                 attaches=attaches)
-    while True:
-        schedule.run_pending()
+    send_mail(sender, password, receivers, subject, content, attaches, mail_host)
