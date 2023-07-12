@@ -8,14 +8,14 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 
 def report_task():
-    doPrepare.prepareAndHandle()
+     # doPrepare.prepareAndHandle()
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == "__main__":
-    schduler = BlockingScheduler()
-    schduler.add_job(report_task, "cron", hour=10)
-    schduler.start()
-    # doPrepare.prepareAndHandle()
+    # schduler = BlockingScheduler()
+    # schduler.add_job(report_task, "cron", hour=10)
+    # schduler.start()
+    report_task()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
