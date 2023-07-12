@@ -2,6 +2,7 @@
 import doPrepare
 from apscheduler.schedulers.blocking import BlockingScheduler
 
+
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
@@ -9,12 +10,12 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 def report_task():
     doPrepare.prepareAndHandle()
 
+
 # Press the green button in the gutter to run the script.
-if __name__ == '__main__':
+if __name__ == "__main__":
     schduler = BlockingScheduler()
-    schduler.add_job(report_task, 'cron', hour=10)
+    schduler.add_job(report_task, "cron", hour=10)
     schduler.start()
+    # doPrepare.prepareAndHandle()
 
-
-    
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
