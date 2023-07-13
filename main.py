@@ -1,17 +1,22 @@
 from lib import doPrepare
-from log import MyLog
+import util
 import logging
+import json
 
 
 def report_task():
-    doPrepare.prepareAndHandle()
+    util.setup_logging()
+
+    logging.info("Starting the application")
+
+    file_path = "../files/config.json"
+    logging.info("读取配置文件")
+    with open(file_path, "r", encoding="utf-8") as file:
+        data = json.load(file)
+
+    doPrepare.prepareAndHandle(data)
+    logging.info("Finishing the application")
 
 
 if __name__ == "__main__":
-    mylog = MyLog()
-    mylog.test()
-    logging.debug("debug test")
-    # schduler = BlockingScheduler()
-    # schduler.add_job(report_task, "cron", hour=10)
-    # schduler.start()
-    # report_task()
+    report_task()

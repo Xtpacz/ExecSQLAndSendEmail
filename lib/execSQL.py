@@ -1,11 +1,12 @@
-import logging
-
 import pymysql
 import pandas as pd
 import os
 from openpyxl.reader.excel import load_workbook
+import logging
 
 from lib import sendEmail
+
+logger = logging.getLogger(__name__)
 
 
 class MysqlSave:
@@ -80,6 +81,7 @@ class MysqlSave:
         # 拿到表头
         des = self.cursor.description
         title = [each[0] for each in des]
+        logger.info("报表头部: " + str(title))
 
         # 拿到数据库查询的内容
         result_list = []
@@ -89,8 +91,10 @@ class MysqlSave:
         # 保存成dataframe
         df_dealed = pd.DataFrame(result_list, columns=title)
         # 保存成csv 这个编码是为了防止中文没法保存，index=None的意思是没有行号
-        df_dealed.to_csv(file_path, index=None, encoding="utf_8_sig")
-        logging.info("get the csv file successfully")
+        df_dealed.to_csv(
+            file_path, index=None, encoding="utf_8_sig", lineterminator="\r\n"
+        )
+        logger.info("成功导出csv文件")
 
     def check_folder_exists(self, file_path):
         """
@@ -102,27 +106,27 @@ class MysqlSave:
         if not os.path.exists(file_path):
             os.makedirs(file_path)
             print(f"Folder '{file_path}' created successfully.")
-            logging.info("folder created successfully")
+            logger.info("folder created successfully")
         else:
             print(f"Folder '{file_path}' already exists.")
-            logging.info("folder already exists")
+            logger.info("folder already exists")
 
 
 def okgogogo(
-        host,
-        port,
-        user,
-        dbpassword,
-        charset,
-        mail_host,
-        sender,
-        password,
-        receiver,
-        subject,
-        content,
-        sqls_address,
-        sqls_name,
-        results_path,
+    host,
+    port,
+    user,
+    dbpassword,
+    charset,
+    mail_host,
+    sender,
+    password,
+    receiver,
+    subject,
+    content,
+    sqls_address,
+    sqls_name,
+    results_path,
 ):
     """
     导出报表以及发送邮件
@@ -154,18 +158,21 @@ def okgogogo(
         # 读取sql语句内容
         with open(sqls_address[i], "r", encoding="utf-8") as file:
             sql_content = file.read()
+        if sql_content is not None:
+            logger.info("SQL语句读取成功")
 
         # 创建保存报表的文件夹
         mysql.check_folder_exists(results_path)
+        logger.info("保存报表的文件夹创建成功")
 
         # 先创建当前要写入的文件，之后再写入
         file_path_xlsx = file_name_without_suffix + ".xlsx"
         file_path_csv = file_name_without_suffix + ".csv"
 
-        print("file_path = " + file_path_xlsx)
-
         # 执行SQL查询并且保存报表, 若要保存为csv则传入file_path_csv，否则传入file_path_xlsx
         # 但是目前导出xlsx的功能还没有完成，后续完善
+        logger.info("要生成的csv文件地址 = " + file_path_csv)
+        logger.info("准备开始导出报表.................................................")
         mysql.search_and_save_csv(sql_content, r"" + file_path_csv)
 
     attaches = []

@@ -1,0 +1,41 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+    simple:
+        # 原本的format
+        # format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        # 更新后的format，阴
+        format: "%(levelname)s - %(name)s - %(message)s"
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: INFO
+        formatter: simple
+        stream: ext://sys.stdout
+
+    info_file_handler:
+        class: logging.FileHandler
+        level: INFO
+        encoding: utf-8
+        mode: w
+        formatter: simple
+        filename: logging.log
+
+loggers:
+    doPrepare:
+        level: INFO
+        handler: [console, info_file_handler]
+        propagate: no
+    execSQL:
+        level: INFO
+        handler: [console, info_file_handler]
+        propagate: no
+    sendEmail:
+        level: INFO
+        handler: [console, info_file_handler]
+        propagate: no
+
+root:
+    level: INFO
+    handlers: [info_file_handler]

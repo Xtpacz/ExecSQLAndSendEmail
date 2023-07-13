@@ -1,22 +1,20 @@
-import json
 from lib import execSQL
 import datetime
 import locale
 
+import logging
 
-def prepareAndHandle():
+
+def prepareAndHandle(data):
+    logger = logging.getLogger(__name__)
+
     # 设置当前区域设置为中文（中国）
     locale.setlocale(locale.LC_ALL, "zh_CN.UTF-8")
     # 获取当前日期
     current_date = datetime.datetime.now().date()
     # 获取今天是星期几（中文）
     weekday_today = current_date.strftime("%A")
-    print("今天是：", weekday_today)
-
-    file_path = "../../files/config.json"
-    # 读取JSON文件
-    with open(file_path, "r", encoding="utf-8") as file:
-        data = json.load(file)
+    logger.info("今天是" + weekday_today + ", ")
 
     # 解析数据库信息
     database = data["database"]
@@ -25,6 +23,7 @@ def prepareAndHandle():
     user = database["user"]
     db_password = database["password"]
     charset = database["charset"]
+    logger.info(str(database))
 
     # 解析邮件信息
     mail = data["mail"]
@@ -51,17 +50,7 @@ def prepareAndHandle():
         today = datetime.date.today()
         # 将邮件主题加入当前日期
         subject = subject + str(today)
-        print(
-            "\nname = "
-            + name
-            + "\nemail = "
-            + receiver
-            + "\nsubject = "
-            + subject
-            + "\ncontent = "
-            + content
-            + "\n"
-        )
+        logger.info(str(person_data))
 
         file_address = []
         file_name = []
@@ -72,6 +61,7 @@ def prepareAndHandle():
         # 解析查询文件保存位置
         results_path = data["results_path"]
         results_path = results_path + name + "\\" + str(today) + "\\"
+        # return
         # 由于发送频率不高，可以每个人都重新链接数据库
         execSQL.okgogogo(
             host,

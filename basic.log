@@ -1,3 +1,0 @@
-root-INFO-This will write in basic.log
-root-DEBUG-This will not write in basic.log
-root-DEBUG-debug test
