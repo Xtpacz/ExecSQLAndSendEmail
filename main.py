@@ -16,6 +16,7 @@ def report_task():
 
     doPrepare.prepareAndHandle(data)
     logging.info("Finishing the application")
+    input('Press <Enter>')
 
 
 if __name__ == "__main__":

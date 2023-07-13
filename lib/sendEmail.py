@@ -35,6 +35,7 @@ def send_mail(
     else:
         print("邮件发送成功")
         logger.info("邮件发送成功, 发送成功的附件如下: " + str(attaches))
+        logger.info("\n\n\n\n\n")
 
 
 def doEmail(mail_host, receivers, attaches, password, sender, subject, content):
