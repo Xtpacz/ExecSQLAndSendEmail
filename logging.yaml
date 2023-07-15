@@ -5,7 +5,7 @@ formatters:
         # 原本的format
         # format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         # 更新后的format，阴
-        format: "[%(levelname)s] - [%(name)s] - %(message)s"
+        format: "[%(levelname)s] - %(message)s"
 
 handlers:
     console:

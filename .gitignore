@@ -18,10 +18,10 @@ build
 .idea/misc.xml
 .idea/modules.xml
 .idea/sshConfigs.xml
-queries.py
-sql2.csv
-test.txt
 .idea/vcs.xml
 .idea/workspace.xml
 logging.log
 main.spec
+/myfiles/
+/test/
+rizhi.log

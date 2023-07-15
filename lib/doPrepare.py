@@ -1,13 +1,29 @@
 from lib import execSQL
 import datetime
 import locale
-
+import os
 import logging
+
+logger = logging.getLogger(__name__)
+
+
+def check_folder_exists(folder_path):
+    """
+    检查目标文件夹是否存在，若不存在则创建
+    :param folder_path: 待检测的文件夹的路径
+    :return:
+    """
+    # print("check folder exists soon...")
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        # print(f"Folder '{folder_path}' created successfully.")
+        logger.info("成功创建文件夹")
+    else:
+        # print(f"Folder '{folder_path}' already exists.")
+        logger.info("文件夹已存在")
 
 
 def prepareAndHandle(data):
-    logger = logging.getLogger(__name__)
-
     # 设置当前区域设置为中文（中国）
     locale.setlocale(locale.LC_ALL, "zh_CN.UTF-8")
     # 获取当前日期
@@ -16,66 +32,48 @@ def prepareAndHandle(data):
     weekday_today = current_date.strftime("%A")
     logger.info("今天是" + weekday_today + ", ")
 
-    # 解析数据库信息
-    database = data["database"]
-    host = database["host"]
-    port = database["port"]
-    user = database["user"]
-    db_password = database["password"]
-    charset = database["charset"]
-    logger.info(str(database))
+    # 解析得到数据库信息
+    database_info = data["database"]
+    logger.info(str(database_info))
 
     # 解析邮件信息
     mail = data["mail"]
-    mail_host = mail["mail_host"]
-    sender = mail["sender"]
-    mail_password = mail["password"]
 
-    # 解析收件人信息
-    to = mail["to"]
+    # 发送者的信息，包括邮件host，发送者邮箱，授权码
+    sender_info = dict()
+    sender_info["mail_host"] = mail["mail_host"]
+    sender_info["sender"] = mail["sender"]
+    sender_info["password"] = mail["password"]
 
-    # 遍历每个收件人，以每个收件人为单位进行处理SQL发邮件
-    for person_key, person_data in to.items():
-        name = person_data["name"]
-        receiver = person_data["email"]
-        subject = person_data["subject"]
-        content = person_data["content"]
-        queries = person_data["queries"]
-        need_send_day = person_data["when"]
-        # 今天这个不需要对这个人发送邮件
-        if need_send_day != weekday_today:
+    # 解析所有的报表信息
+    reports = mail["reports"]
+    # 遍历每个报表，先检查今天是否要发送这个报表，然后再以每个报表为单位进行处理
+    for report_key, report in reports.items():
+        reportName = report["reportName"]
+        when = report["when"]
+        # 如果这个报表今天不需要发送，则continue
+        if when != weekday_today:
             continue
-
-        # 获取当前日期
+        # 获取当前日期，加工生成报表名称
         today = datetime.date.today()
-        # 将邮件主题加入当前日期
-        subject = subject + str(today)
-        logger.info(str(person_data))
+        # 完整的报表名称例如：客户旅程表2023-07-15
+        handledReportName = reportName + str(today)
+        # 检查并构造文件夹
+        # 文件路径例如：myfiles\\results\\客户旅程报表
+        report_folder = "myfiles\\results\\" + reportName
+        check_folder_exists(report_folder)
+        logger.info("文件夹已经建立或已存在: " + report_folder)
+        logger.info("此刻正在处理的报表是: " + reportName)
 
-        file_address = []
-        file_name = []
-        for query_key, query_data in queries.items():
-            file_address.append(query_data["fileAddress"])
-            file_name.append(query_data["fileName"])
+        mail_info = dict()
+        mail_info["reportName"] = report["reportName"]
+        mail_info["subject"] = report["subject"]
+        mail_info["content"] = report["content"]
+        # 现在同一个报表有多个邮件接收者了
+        mail_info["receivers"] = report["receivers"]
+        mail_info["report_folder"] = report_folder
+        mail_info["file_path"] = report_folder + "\\" + handledReportName
+        mail_info["sqlFileLocation"] = "myfiles\\queries\\" + report["sqlName"]
 
-        # 解析查询文件保存位置
-        results_path = data["results_path"]
-        results_path = results_path + name + "\\" + str(today) + "\\"
-        # return
-        # 由于发送频率不高，可以每个人都重新链接数据库
-        execSQL.okgogogo(
-            host,
-            port,
-            user,
-            db_password,
-            charset,
-            mail_host,
-            sender,
-            mail_password,
-            receiver,
-            subject,
-            content,
-            file_address,
-            file_name,
-            results_path,
-        )
+        # 由于发送频率不高，可以每个针对每个报表链接一次数据库
+        execSQL.okgogogo(database_info, sender_info, mail_info)

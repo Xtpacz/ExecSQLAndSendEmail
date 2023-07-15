@@ -81,7 +81,7 @@ class MysqlSave:
         # 拿到表头
         des = self.cursor.description
         title = [each[0] for each in des]
-        logger.info("报表头部: " + str(title))
+        # logger.info("报表头部是: " + str(title))
 
         # 拿到数据库查询的内容
         result_list = []
@@ -94,91 +94,48 @@ class MysqlSave:
         df_dealed.to_csv(
             file_path, index=None, encoding="utf_8_sig", lineterminator="\r\n"
         )
-        logger.info("成功导出csv文件")
-
-    def check_folder_exists(self, file_path):
-        """
-        检查目标文件夹是否存在，若不存在则创建
-        :param folder_path: 待检测的文件夹的路径
-        :return:
-        """
-        print("check folder exists soon...")
-        if not os.path.exists(file_path):
-            os.makedirs(file_path)
-            print(f"Folder '{file_path}' created successfully.")
-            logger.info("folder created successfully")
-        else:
-            print(f"Folder '{file_path}' already exists.")
-            logger.info("folder already exists")
+        logger.info("成功导出报表!")
 
 
-def okgogogo(
-    host,
-    port,
-    user,
-    dbpassword,
-    charset,
-    mail_host,
-    sender,
-    password,
-    receiver,
-    subject,
-    content,
-    sqls_address,
-    sqls_name,
-    results_path,
-):
+def okgogogo(database_info, sender_info, mail_info):
     """
     导出报表以及发送邮件
-    :param host: mysql主机ip
-    :param port: 端口
-    :param user: 数据库用户名
-    :param dbpassword: 数据库密码
-    :param charset: 字符集
-    :param mail_host: 发送者邮箱的host
-    :param sender: 发送者邮箱
-    :param password: 邮箱授权码
-    :param receiver: 接收者邮箱
-    :param subject: 邮件主题
-    :param content: 邮件内容
-    :param sqls_address: SQL语句的位置
-    :param sqls_name: SQL语句的名字
-    :param results_path: 导出的报表保存的位置
+    :param database_info: 数据库链接信息
+    :param sender_info: 发送端的基本信息
+    :param mail_info: 邮件的基本信息
     :return:
     """
+    host = database_info["host"]
+    port = database_info["port"]
+    user = database_info["user"]
+    db_password = database_info["password"]
+    charset = database_info["charset"]
     # 初始化类
-    mysql = MysqlSave(host, int(port), user, dbpassword, charset)
+    mysql = MysqlSave(host, int(port), user, db_password, charset)
 
-    # 遍历每个sql语句
-    for i in range(len(sqls_name)):
-        # 没有xlsx后缀的文件路径
-        file_name_without_suffix = results_path + sqls_name[i]
-        print("file_name_without_suffix = " + file_name_without_suffix)
+    # 没有xlsx后缀的文件路径
+    # file_name_without_suffix = results_path + sqls_name[i]
+    # print("file_name_without_suffix = " + file_name_without_suffix)
 
-        # 读取sql语句内容
-        with open(sqls_address[i], "r", encoding="utf-8") as file:
-            sql_content = file.read()
-        if sql_content is not None:
-            logger.info("SQL语句读取成功")
+    # 读取sql语句内容
+    with open(mail_info["sqlFileLocation"], "r", encoding="utf-8") as file:
+        sql_content = file.read()
+    if sql_content is not None:
+        logger.info("SQL语句读取成功")
 
-        # 创建保存报表的文件夹
-        mysql.check_folder_exists(results_path)
-        logger.info("保存报表的文件夹创建成功")
+    # 先创建当前要写入的文件，之后再写入
+    file_path_xlsx = mail_info["file_path"] + ".xlsx"
+    file_path_csv = mail_info["file_path"] + ".csv"
 
-        # 先创建当前要写入的文件，之后再写入
-        file_path_xlsx = file_name_without_suffix + ".xlsx"
-        file_path_csv = file_name_without_suffix + ".csv"
+    # 执行SQL查询并且保存报表, 若要保存为csv则传入file_path_csv，否则传入file_path_xlsx
+    # 但是目前导出xlsx的功能还没有完成，后续完善
+    logger.info("要生成的csv文件地址: " + file_path_csv)
+    logger.info("正在导出报表, 请稍等...")
+    mysql.search_and_save_csv(sql_content, r"" + file_path_csv)
 
-        # 执行SQL查询并且保存报表, 若要保存为csv则传入file_path_csv，否则传入file_path_xlsx
-        # 但是目前导出xlsx的功能还没有完成，后续完善
-        logger.info("要生成的csv文件地址 = " + file_path_csv)
-        logger.info("准备开始导出报表.................................................")
-        mysql.search_and_save_csv(sql_content, r"" + file_path_csv)
+    # for i in range(len(sqls_name)):
+    #     full_path = results_path + sqls_name[i] + ".csv"
+    #     attaches.append(full_path)
+    #     print(full_path)
 
-    attaches = []
-    for i in range(len(sqls_name)):
-        full_path = results_path + sqls_name[i] + ".csv"
-        attaches.append(full_path)
-        print(full_path)
-
-    sendEmail.doEmail(mail_host, receiver, attaches, password, sender, subject, content)
+    sendEmail.doEmail(sender_info, mail_info, file_path_csv)

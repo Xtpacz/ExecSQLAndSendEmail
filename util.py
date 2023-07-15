@@ -19,4 +19,4 @@ def setup_logging(
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)
-    logging.info(f"Logger initialized in {__name__}")
+    # logging.info(f"日志初始化 {__name__}")
