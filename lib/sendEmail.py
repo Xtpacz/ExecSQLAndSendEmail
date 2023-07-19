@@ -42,20 +42,20 @@ def doEmail(sender_info, mail_info, file_path_csv):
     receivers = mail_info["receivers"]
     subject = mail_info["subject"]
     content = mail_info["content"]
-    logger.info("准备发送邮件...")
+    logger.info("\n准备发送邮件...")
     logger.info(
-        "发送邮件的详细信息如下："
-        + "\n发送人: "
+        "------------------------发送邮件的详细信息如下：------------------------"
+        + "\n[INFO] - 发送人: "
         + sender
-        + "\n接收人: "
+        + "\n[INFO] - 接收人: "
         + str(receivers)
-        + "\n主题: "
+        + "\n[INFO] - 主题: "
         + subject
-        + "\n邮件内容: "
+        + "\n[INFO] - 邮件内容: "
         + content
-        + "\n附件: "
+        + "\n[INFO] - 附件: "
         + str(file_path_csv)
-        + "\n"
+        + "\n[INFO] - ----------------------------------------------------------------------"
     )
     logger.info("准备完毕, 开始发送邮件...")
     send_mail(sender, password, receivers, subject, content, file_path_csv, mail_host)

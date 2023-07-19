@@ -2,6 +2,7 @@ from lib import doPrepare
 import util
 import logging
 import json
+import traceback
 
 
 def report_task():
@@ -17,4 +18,8 @@ def report_task():
 
 
 if __name__ == "__main__":
-    report_task()
+    try:
+        report_task()
+    except Exception as e:
+        logging.error(f"main Exception: {traceback.format_exc()}")
+        raise

@@ -27,7 +27,7 @@ class MysqlSave:
             charset=charset,
         )
         self.cursor = self.content.cursor()
-        print("数据库链接成功")
+        logger.info("数据库链接成功")
 
     def search_and_save_xlsx(self, sql, file_path):
         """
@@ -68,7 +68,7 @@ class MysqlSave:
             )
         book.close()
 
-    def search_and_save_csv(self, sql, file_path):
+    def search_and_save_csv(self, sql, file_path_csv, file_path_excel):
         """
         执行查询语句并导出为csv的函数，此功能正常使用
         :param sql: 要执行的mysql指令
@@ -76,6 +76,7 @@ class MysqlSave:
         :return:
         """
         # 执行sql语句
+        logger.info("执行sql语句...")
         self.cursor.execute(sql)
 
         # 拿到表头
@@ -87,13 +88,16 @@ class MysqlSave:
         result_list = []
         for each in self.cursor.fetchall():
             result_list.append(list(each))
-
+        logger.info("拿到了报表内容，接下来保存为csv格式文件")
         # 保存成dataframe
         df_dealed = pd.DataFrame(result_list, columns=title)
         # 保存成csv 这个编码是为了防止中文没法保存，index=None的意思是没有行号
         df_dealed.to_csv(
-            file_path, index=None, encoding="utf_8_sig", lineterminator="\r\n"
+            file_path_csv, index=None, encoding="utf_8_sig", lineterminator="\r\n"
         )
+        # df_dealed.to_excel(
+        #     file_path_excel
+        # )
         logger.info("成功导出报表!")
 
 
@@ -130,8 +134,10 @@ def okgogogo(database_info, sender_info, mail_info):
     # 执行SQL查询并且保存报表, 若要保存为csv则传入file_path_csv，否则传入file_path_xlsx
     # 但是目前导出xlsx的功能还没有完成，后续完善
     logger.info("要生成的csv文件地址: " + file_path_csv)
-    logger.info("正在导出报表, 请稍等...")
-    mysql.search_and_save_csv(sql_content, r"" + file_path_csv)
+    n = int(input("[输入] - 要执行几次sql?(输入1,2,3...):"))
+    for i in range(1, n + 1):
+        logger.info("------------------------第" + str(i) + "次执行sql------------------------")
+        mysql.search_and_save_csv(sql_content, r"" + file_path_csv, r""+file_path_xlsx)
 
     # for i in range(len(sqls_name)):
     #     full_path = results_path + sqls_name[i] + ".csv"

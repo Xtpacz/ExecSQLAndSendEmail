@@ -17,10 +17,10 @@ def check_folder_exists(folder_path):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
         # print(f"Folder '{folder_path}' created successfully.")
-        logger.info("成功创建文件夹")
+        logger.info("成功创建文件夹: "+folder_path)
     else:
         # print(f"Folder '{folder_path}' already exists.")
-        logger.info("文件夹已存在")
+        logger.info(folder_path+": 文件夹已存在,不需要重新创建")
 
 
 def prepareAndHandle(data):
@@ -30,11 +30,11 @@ def prepareAndHandle(data):
     current_date = datetime.datetime.now().date()
     # 获取今天是星期几（中文）
     weekday_today = current_date.strftime("%A")
-    logger.info("今天是" + weekday_today + ", ")
+    # logger.info("今天是" + weekday_today)
 
     # 解析得到数据库信息
     database_info = data["database"]
-    logger.info(str(database_info))
+    # logger.info(str(database_info))
 
     # 解析邮件信息
     mail = data["mail"]
@@ -62,8 +62,8 @@ def prepareAndHandle(data):
         # 文件路径例如：myfiles\\results\\客户旅程报表
         report_folder = "myfiles\\results\\" + reportName
         check_folder_exists(report_folder)
-        logger.info("文件夹已经建立或已存在: " + report_folder)
-        logger.info("此刻正在处理的报表是: " + reportName)
+        # logger.info("文件夹已经建立或已存在: " + report_folder)
+        logger.info("正在处理的报表是: " + reportName)
 
         mail_info = dict()
         mail_info["reportName"] = report["reportName"]
