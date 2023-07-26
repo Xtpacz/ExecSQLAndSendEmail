@@ -10,35 +10,26 @@
 
 将`main.py`打包成`.exe`文件之后
 
-将`lib、logging.yaml、setup_logging.py、util.py`与`main.exe`放在同一个文件夹内
+将`logging.yaml`与`main.exe`放在同一个文件夹内
 
 完成之后，整个项目的文件夹布局应该是这样子的：（可以生成目录结构的在线网站：）[Dir Tree Noter (yardtea.cc)](http://dir.yardtea.cc/)
 
 ```
-projcet
-├─ code
-│    ├─ lib
-│    │    ├─ doPrepare.py
-│    │    ├─ execSQL.py
-│    │    └─ sendEmail.py
-│    ├─ logging.yaml
-│    ├─ main.exe
-│    ├─ setup_logging.py
-│    └─ util.py
-└─ files
-       ├─ config.json
-       ├─ queries
-       │    ├─ to_Mary001.sql
-       │    ├─ to_Mary002.sql
-       │    └─ to_Jackson.sql
-       └─ results
-              ├─ Jackson
-              │    └─ 2023-07-13
-              │           └─ report_to_Jackson.csv
-              └─ Mary
-                   └─ 2023-07-13
-                          ├─ report001_to_Mary.csv
-                          └─ report002_to_Mary.csv
+project
+├─ logging.log
+├─ logging.yaml
+├─ main.exe
+└─ myfiles
+ 	├─ config.json
+ 	├─ queries
+ 	│	├─ report_about_w_to_tom.sql
+ 	│	└─ report_about_a_to_jack.sql
+ 	└─ results
+ 	 	├─ report_about_w_to_tom
+ 	 	│	├─ report_about_w_to_tom2023-07-23.csv
+ 	 	│	└─ report_about_w_to_tom2023-07-26.csv
+ 	 	└─ report_about_a_to_jack
+ 	 	 	└─ report_about_a_to_jack2023-07-26.csv
 ```
 
 说明：
@@ -51,51 +42,66 @@ projcet
 
 ```json
 {
-	"database":{
-		"host":"server IP",
-		"port":"port",
-		"user":"username",
-		"password":"password",
-		"charset":"charset"
-	},
-	"mail":{
-		"mail_host":"smtp.xxx.com",
-		"sender":"xxx@xxx.com",
-		"password":"Email authorization code",
-		"to":{
-			"people1":{
-				"name":"Tom",
-				"email":"xxx@xxx.com",
-				"subject":"email subject",
-				"content":"email content",
-				"when":"What day of the week to send an email.",
-				"queries":{
-					"sql1":{ 
-						"fileAddress":"The location where the SQL statement is stored.",
-						"fileName":"The name of the generated report."
-					}
-				}
-			},
-			"people2":{
-				"name":"Mary",
-				"email":"xxx@xxx.com",
-				"subject":"email subject",
-				"content":"email content",
-				"when":"What day of the week to send an email.",
-				"queries":{
-					"sql1":{
-						"fileAddress":"The location where the SQL statement is stored.",
-						"fileName":"The name of the generated report."
-					},
-					"sql2":{
-						"fileAddress":"The location where the SQL statement is stored.",
-						"fileName":"The name of the generated report."
-					}
-				}
-			}
+	"connections":{
+		"connection_1":{
+			"host":"your host",
+			"port":"3306",
+			"user":"root",
+			"password":"admin",
+			"charset":"utf8"
+		},
+		"connection_2":{
+			"host": "xx.xx.xx.xx",
+			"port": "3306",
+			"user": "root",
+			"password": "admin",
+			"charset": "utf8"
+		},
+		"connection_3":{
+			"host": "xx.xx.xx.xx",
+			"port": "3306",
+			"user": "root",
+			"password": "admin",
+			"charset": "utf8"
 		}
 	},
-	"results_path":"The location where the generated report is saved."
+	"mail":{
+		"mail_host":"mail host",
+		"sender":"sender's email address",
+		"password":"your password",
+		"reports":{
+			"report_crm_1":{
+				"db": "connection_1",
+				"reportName":"your report name",
+				"subject":"your subject",
+				"content":"your content",
+				"receivers":["receiver1's email address","receiver2's email address"],
+				"when":"星期四",
+				"sqlName":"sql_name.sql",
+				"count": 1
+			},
+			"report_local_1":{
+				"db": "connection_2",
+				"reportName":"your report name",
+				"subject":"your subject",
+				"content":"your content",
+				"receivers":["receiver1's email address","receiver2's email address"],
+				"when":"星期三",
+				"sqlName":"sql_name.sql",
+				"count": 3
+			},
+			"report_remote_1": {
+				"db": "connection_3",
+				"reportName":"your report name",
+				"subject":"your subject",
+				"content":"your content",
+				"receivers":["receiver1's email address","receiver2's email address"],
+				"when":"星期三",
+				"sqlName":"sql_name.sql",
+				"count": 1
+			}
+		}
+	}
 }
 ```
 
