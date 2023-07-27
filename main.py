@@ -236,7 +236,6 @@ def report_task():
     logging.info("读取成功！\n")
     prepareAndHandle(data)
     logging.info("程序结束")
-    input("按回车键退出")
 
 
 if __name__ == "__main__":
