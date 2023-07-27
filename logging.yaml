@@ -2,10 +2,8 @@ version: 1
 disable_existing_loggers: False
 formatters:
     simple:
-        # 原本的format
-        # format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        # 更新后的format，阴
-        format: "[%(levelname)s] - %(message)s"
+#         format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+         format: "[%(asctime)s] - [%(levelname)s] - %(message)s"
 
 handlers:
     console:
@@ -21,20 +19,6 @@ handlers:
         mode: w
         formatter: simple
         filename: logging.log
-
-loggers:
-    doPrepare:
-        level: INFO
-        handler: [console, info_file_handler]
-        propagate: no
-    execSQL:
-        level: INFO
-        handler: [console, info_file_handler]
-        propagate: no
-    sendEmail:
-        level: INFO
-        handler: [console, info_file_handler]
-        propagate: no
 
 root:
     level: INFO

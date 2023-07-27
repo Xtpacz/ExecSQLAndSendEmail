@@ -1,3 +1,6 @@
+import sys
+import time
+
 import pymysql
 import pandas as pd
 import json
@@ -9,6 +12,7 @@ import logging
 import yagmail
 import yaml
 import logging.config
+from babel import Locale
 
 
 def sendEmail(sender_info, mail_info, file_path_csv):
@@ -18,20 +22,20 @@ def sendEmail(sender_info, mail_info, file_path_csv):
     receivers = mail_info["receivers"]
     subject = mail_info["subject"]
     content = mail_info["content"]
-    logging.info("\n准备发送邮件...")
+    logging.info("准备发送邮件...")
     logging.info(
-        "------------------------发送邮件的详细信息如下：------------------------"
-        + "\n[INFO] - 发送人: "
+        "发送邮件的详细信息如下："
+        + "\n发送人: "
         + sender
-        + "\n[INFO] - 接收人: "
+        + "\n接收人: "
         + str(receivers)
-        + "\n[INFO] - 主题: "
+        + "\n主题: "
         + subject
-        + "\n[INFO] - 邮件内容: "
+        + "\n邮件内容: "
         + content
-        + "\n[INFO] - 附件: "
+        + "\n附件: "
         + str(file_path_csv)
-        + "\n[INFO] - ----------------------------------------------------------------------"
+        + "\n------------------------------------------------"
     )
     logging.info("准备完毕, 开始发送邮件...")
     try:
@@ -42,7 +46,7 @@ def sendEmail(sender_info, mail_info, file_path_csv):
     except Exception as e:
         logging.warning("邮件发送失败，发送失败的邮件如下: " + str(file_path_csv))
     else:
-        logging.info("邮件发送成功\n\n")
+        logging.info("邮件发送成功！\n\n")
 
 
 def search_and_save_csv(mysql, sql, file_path_csv):
@@ -53,7 +57,7 @@ def search_and_save_csv(mysql, sql, file_path_csv):
     :return:
     """
     # 执行sql语句
-    logging.info("执行sql语句...")
+    logging.info("正在执行sql语句...")
     mysql.execute(sql)
 
     # 拿到表头
@@ -71,7 +75,7 @@ def search_and_save_csv(mysql, sql, file_path_csv):
     df_dealed.to_csv(
         file_path_csv, index=None, encoding="utf_8_sig", lineterminator="\r\n"
     )
-    logging.info("成功导出报表!")
+    logging.info("成功导出报表!\n")
 
 
 def init_con(database_info):
@@ -110,11 +114,9 @@ def okgogogo(database_info, sender_info, mail_info):
     # 但是目前导出xlsx的功能还没有完成，后续完善
     logging.info("要生成的csv文件地址: " + file_path_csv)
     n = mail_info["count"]
-    logging.info("这个SQL要执行 " + str(n) + " 次...")
+    logging.info("这个SQL要执行 " + str(n) + " 次...\n")
     for i in range(1, n + 1):
-        logging.info(
-            "------------------------第" + str(i) + "次执行sql------------------------"
-        )
+        logging.info("第" + str(i) + "次执行sql:")
         search_and_save_csv(mysql, sql_content, r"" + file_path_csv)
 
     sendEmail(sender_info, mail_info, file_path_csv)
@@ -136,11 +138,23 @@ def check_folder_exists(folder_path):
 
 def prepareAndHandle(data):
     # 设置当前区域设置为中文（中国）
-    locale.setlocale(locale.LC_ALL, "zh_CN.UTF-8")
+    # locale = Locale.parse("zh_CN", sep='_')
+    # locale.setlocale(locale.LC_ALL, "zh_CN.UTF-8")
     # 获取当前日期
     current_date = datetime.datetime.now().date()
     # 获取今天是星期几（中文）
     weekday_today = current_date.strftime("%A")
+    dic = {
+        "Monday": 1,
+        "Tuesday": 2,
+        "Wednesday": 3,
+        "Thursday": 4,
+        "Friday": 5,
+        "Saturday": 6,
+        "Sunday": 7,
+    }
+    # 转换星期的中英文
+    weekday_today = dic[weekday_today]
 
     # 使用字典来保存多个连接. 其中key是链接的名称, value是数据库链接信息
     dbs = dict()
@@ -162,7 +176,7 @@ def prepareAndHandle(data):
         reportName = report["reportName"]
         when = report["when"]
         # 如果这个报表今天不需要发送，则continue
-        if when != weekday_today:
+        if weekday_today not in when:
             continue
         # 获取当前日期，加工生成报表名称
         today = datetime.date.today()
@@ -210,11 +224,16 @@ def setup_logging(
 
 def report_task():
     setup_logging()
+    logging.Formatter.converter = time.localtime
     logging.info("程序开始")
+    current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+    logging.info("当前路径：" + current_path)
+    os.chdir(current_path)
     file_path = "myfiles/config.json"
     logging.info("读取config.json配置文件...")
     with open(file_path, "r", encoding="utf-8") as file:
         data = json.load(file)
+    logging.info("读取成功！\n")
     prepareAndHandle(data)
     logging.info("程序结束")
     input("按回车键退出")
