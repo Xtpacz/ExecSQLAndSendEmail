@@ -9,25 +9,38 @@ import yagmail
 import yaml
 import logging.config
 
-mysql = None
+# 所有的配置
 config_data = None
+
+# 邮件发送方
+sender_info = None
+
+# 数据库连接以及语句执行相关
+mysql = None
 connections = None
 current_connection = None
-# 保存所有报表的信息
-sender_info = None
-reports = None
-# 保存报表的json配置信息
-current_report = None
-# 保存当前要执行的SQL语句
 current_sql_name = None
 current_sql_content = None
-# 报表的实际位置
+
+# 所有的报表
+reports = None
+
+# 当前报表
+current_report = None
+
+# 当前报表要存放的的实际位置
+current_folder_path = None
 file_path_csv = None
+
+# 今天需要处理的报表
 reports_need_send = []
+
 # 如果是需要分隔报表,则以列表形式存储所有子报表的存放位置,方便后续合并
 sub_reports = []
+
+# 合并报表的依据
 merge_basis = []
-current_folder_path = None
+
 WEEKDAY_EN_2_NUM = {
     "Monday": 1,
     "Tuesday": 2,
@@ -37,6 +50,8 @@ WEEKDAY_EN_2_NUM = {
     "Saturday": 6,
     "Sunday": 7,
 }
+
+# 全局变量
 DEFAULT_LOGGING_CONFIG_PATH = "logging.yaml"
 DEFAULT_LOGGING_LEVEL = logging.INFO
 LOGGING_ENV_KEY = "LOG_CFG"
@@ -80,6 +95,7 @@ def controller():
                 current_folder_path
                 + "\\"
                 + current_report["report_name"]
+                + "_"
                 + str(today)
                 + ".csv"
             )
@@ -172,14 +188,14 @@ def get_data_save_csv():
     create_folder_exists()
     # create the file path
     create_csv_path()
-
+    # logging.info(f"当前报表:{file_path_csv}")
     # get data and save
     title, result_list = execute_and_fetch()
     df_dealt = pd.DataFrame(result_list, columns=title)
     df_dealt.to_csv(
         file_path_csv, index=None, encoding="utf_8_sig", lineterminator="\r\n"
     )
-    logging.info("成功导出报表!\n")
+    logging.info(f"成功导出报表:{file_path_csv}\n")
 
 
 def create_csv_path():
@@ -192,7 +208,7 @@ def create_csv_path():
         # If it is a report that needs to be split, use the sql name to name it.
         global sub_reports
         file_path_csv = (
-            current_folder_path + "\\" + current_sql_name[:-4] + str(today) + ".csv"
+            current_folder_path + "\\" + current_sql_name[:-4] + "_" + str(today) + ".csv"
         )
         sub_reports.append(file_path_csv)
     else:
@@ -201,6 +217,7 @@ def create_csv_path():
             current_folder_path
             + "\\"
             + current_report["report_name"]
+            + "_"
             + str(today)
             + ".csv"
         )
@@ -232,7 +249,7 @@ def merge_report():
     # Iterate over the remaining csv files and merge with the underlying DataFrame one by one.
     for file_path in sub_reports[1:]:
         df = pd.read_csv(file_path)
-        base_df = pd.merge(base_df, df, how="left", on="student_id")
+        base_df = pd.merge(base_df, df, how="left", on=merge_basis)
 
     # Save the merged DataFrame to a new csv file.
     base_df.to_csv(file_path_csv, index=False)
@@ -289,17 +306,23 @@ def send_email():
     """
     global current_report
     receivers = current_report["receivers"]
+    cc = current_report["cc"]
     if not receivers:
         logging.info("没有填写接收人邮箱信息,这个报表保存在本地即可,不需要发送邮件")
         return
 
-    logging.info(f"附件: {file_path_csv}")
     logging.info(f"准备发送邮件至: {receivers}")
+    logging.info(f"抄送至: {cc}")
+    logging.info(f"附件: {file_path_csv}")
 
     try:
         mail = yagmail.SMTP(user=sender_info["sender"], password=sender_info["password"], host=sender_info["mail_host"])
         mail.send(
-            to=receivers, subject=current_report["subject"], contents=current_report["content"], attachments=file_path_csv
+            to=receivers,
+            cc=cc,
+            subject=current_report["subject"],
+            contents=current_report["content"],
+            attachments=file_path_csv
         )
     except Exception as e:
         logging.warning(f"邮件发送失败，发送失败的邮件: {file_path_csv} ")

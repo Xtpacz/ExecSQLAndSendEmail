@@ -42,66 +42,61 @@ project
 
 ```json
 {
-	"connections":{
-		"connection_1":{
-			"host":"your host",
-			"port":"3306",
-			"user":"root",
-			"password":"admin",
-			"charset":"utf8"
-		},
-		"connection_2":{
-			"host": "xx.xx.xx.xx",
-			"port": "3306",
-			"user": "root",
-			"password": "admin",
-			"charset": "utf8"
-		},
-		"connection_3":{
-			"host": "xx.xx.xx.xx",
-			"port": "3306",
-			"user": "root",
-			"password": "admin",
-			"charset": "utf8"
-		}
-	},
-	"mail":{
-		"mail_host":"mail host",
-		"sender":"sender's email address",
-		"password":"your password",
-		"reports":{
-			"report_crm_1":{
-				"db": "connection_1",
-				"reportName":"your report name",
-				"subject":"your subject",
-				"content":"your content",
-				"receivers":["receiver1's email address","receiver2's email address"],
-				"when":"星期四",
-				"sqlName":"sql_name.sql",
-				"count": 1
-			},
-			"report_local_1":{
-				"db": "connection_2",
-				"reportName":"your report name",
-				"subject":"your subject",
-				"content":"your content",
-				"receivers":["receiver1's email address","receiver2's email address"],
-				"when":"星期三",
-				"sqlName":"sql_name.sql",
-				"count": 3
-			},
-			"report_remote_1": {
-				"db": "connection_3",
-				"reportName":"your report name",
-				"subject":"your subject",
-				"content":"your content",
-				"receivers":["receiver1's email address","receiver2's email address"],
-				"when":"星期三",
-				"sqlName":"sql_name.sql",
-				"count": 1
-			}
-		}
-	}
+    "connections": {
+        "connection_001": {
+            "host": "database IP",
+            "port": "database port",
+            "user": "database username",
+            "password": "database password",
+            "charset": "utf8"
+        },
+        "connection_002": {
+            "host": "database IP",
+            "port": "database port",
+            "user": "database username",
+            "password": "database password",
+            "charset": "utf8"
+        }
+    },
+    "sender_info": {
+        "mail_host": "your mail host",
+        "sender": "sender's email",
+        "password": "email password"
+    },
+    "reports": {
+        "report_local_test": {
+            "connection": "connection_001",
+            "report_name": "test report name",
+            "subject": "test report subject",
+            "content": "test report content",
+            "receivers": ["receiver1's email", "receiver2's email"],
+            "when": [1, 2, 3, 5],
+            "sql_name": "",
+            "exec_sql_count": 1,
+            "multi_sql": 1,
+            "sub_sql": {
+                "sql1": "test_sub_sql1.sql",
+                "sql2": "test_sub_sql2.sql"
+            },
+            "merge_basis": ["id", "name"]
+        },
+        "report_to_mary_1": {
+            "connection": "connection_002",
+            "report_name": "report_to_mary",
+            "subject": "report subject",
+            "content": "report content",
+            "receivers": [
+                "receiver1's email",
+                "receiver2's email",
+                "receiver3's email"
+            ],
+            "when": [2, 7],
+            "sql_name": "your_sql.sql",
+            "exec_sql_count": 2,
+            "multi_sql": 0
+        }
+    }
 }
+
 ```
 
