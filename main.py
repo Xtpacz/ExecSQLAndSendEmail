@@ -1,234 +1,376 @@
-# import sys
-# import time
-# import pymysql
-# import pandas as pd
-# import json
-# import traceback
-# import datetime
-# import locale
-# import os
-# import logging
-# import yagmail
-# import yaml
-# import logging.config
-#
-# database_info = None
-# mail_info = dict()
-# data = None
-# file_path_csv = None
-# sql_content = None
-# sub_sql = None
-# mysql = None
-# WEEKDAY_EN_2_NUM  = {
-#     "Monday": 1,
-#     "Tuesday": 2,
-#     "Wednesday": 3,
-#     "Thursday": 4,
-#     "Friday": 5,
-#     "Saturday": 6,
-#     "Sunday": 7,
-# }
-#
-#
-# def sendEmail():
-#     receivers = mail_info["receivers"]
-#     # 如果没有填写任何接收者的邮箱,则不发送邮件
-#     if not receivers:
-#         logging.info("没有填写接收人邮箱信息,这个报表保存在本地即可,不需要发送邮件")
-#         return
-#     mail_host = data["mail"]["mail_host"]
-#     sender = data["mail"]["sender"]
-#     password = data["mail"]["password"]
-#     subject = mail_info["subject"]
-#     content = mail_info["content"]
-#     logging.info("准备发送邮件...")
-#     logging.info(
-#         "发送邮件的详细信息如下："
-#         + "\n发送人: "
-#         + sender
-#         + "\n接收人: "
-#         + str(receivers)
-#         + "\n主题: "
-#         + subject
-#         + "\n邮件内容: "
-#         + content
-#         + "\n附件: "
-#         + str(file_path_csv)
-#         + "\n------------------------------------------------"
-#     )
-#     logging.info("准备完毕, 开始发送邮件...")
-#     try:
-#         mail = yagmail.SMTP(user=sender, password=password, host=mail_host)
-#         mail.send(
-#             to=receivers, subject=subject, contents=content, attachments=file_path_csv
-#         )
-#     except Exception as e:
-#         logging.warning("邮件发送失败，发送失败的邮件如下: " + str(file_path_csv))
-#     else:
-#         logging.info("邮件发送成功！\n\n")
-#
-#
-# def search_and_save_csv():
-#     # 执行sql语句
-#     logging.info("正在执行sql语句...")
-#     mysql.execute(sql_content)
-#
-#     # 拿到表头
-#     des = mysql.description
-#     title = [each[0] for each in des]
-#
-#     # 拿到数据库查询的内容
-#     result_list = []
-#     for each in mysql.fetchall():
-#         result_list.append(list(each))
-#     logging.info("拿到了报表内容，接下来保存为csv格式文件")
-#     # 保存成dataframe
-#     df_dealt = pd.DataFrame(result_list, columns=title)
-#     # 保存成csv 这个utf_8_sig编码是为了防止中文没法保存，index=None的意思是没有行号
-#     df_dealt.to_csv(file_path_csv, index=None, encoding="utf_8_sig", lineterminator="\r\n")
-#     logging.info("成功导出报表!\n")
-#
-#
-# def init_con():
-#     host = database_info["host"]
-#     port = int(database_info["port"])
-#     user = database_info["user"]
-#     password = database_info["password"]
-#     charset = database_info["charset"]
-#     content = pymysql.Connect(
-#         host=host,
-#         port=port,
-#         user=user,
-#         passwd=password,
-#         charset=charset,
-#     )
-#     cursor = content.cursor()
-#     logging.info("数据库链接成功")
-#     return cursor
-#
-#
-# def okgogogo():
-#     global sql_content
-#     # 读取sql语句内容
-#     with open(mail_info["sqlFileLocation"], "r", encoding="utf-8") as file:
-#         sql_content = file.read()
-#     if sql_content is not None:
-#         logging.info("SQL语句读取成功")
-#
-#     # 先创建当前要写入的文件，之后再写入
-#     global file_path_csv
-#     file_path_csv = mail_info["file_path"] + ".csv"
-#
-#     # 执行SQL查询并且保存报表, 若要保存为csv则传入file_path_csv，否则传入file_path_xlsx
-#     # 但是目前导出xlsx的功能还没有完成，后续完善
-#     logging.info("要生成的csv文件地址: " + file_path_csv)
-#     n = mail_info["exec_sql_count"]
-#     logging.info("这个SQL要执行 " + str(n) + " 次\n")
-#     for i in range(1, n + 1):
-#         logging.info("第" + str(i) + "次执行sql")
-#         search_and_save_csv()
-#
-#
-# def check_folder_exists(folder_path):
-#     if not os.path.exists(folder_path):
-#         os.makedirs(folder_path)
-#         logging.info("成功创建文件夹: " + folder_path)
-#     else:
-#         logging.info(folder_path + ": 文件夹已存在,不需要重新创建")
-#
-#
-# def prepareAndHandle():
-#     # 获取当前日期以及当前是星期几,并将英文星期转换为数字1~7
-#     current_date = datetime.datetime.now().date()
-#     weekday_today = current_date.strftime("%A")
-#     weekday_today = WEEKDAY_EN_2_NUM[weekday_today]
-#
-#     # 使用字典来保存多个连接. 其中key是链接的名称, value是数据库链接信息
-#     dbs = dict()
-#     for x in data["connections"]:
-#         dbs[x] = data["connections"][x]
-#     mail = data["mail"]
-#
-#     # 解析所有的报表信息
-#     reports = mail["reports"]
-#     # 遍历每个报表，先检查今天是否要发送这个报表，然后再以每个报表为单位进行处理
-#     for report_key, report in reports.items():
-#         when = report["when"]
-#         # 如果这个报表今天不需要发送，则continue
-#         if weekday_today not in when:
-#             continue
-#
-#         # 配置这个报表需要的数据库链接信息
-#         global database_info
-#         database_info = dbs[report["connection"]]
-#         # 初始化数据库链接
-#         global mysql
-#         mysql = init_con()
-#
-#         report_name = report["report_name"]
-#         today = datetime.date.today()
-#         # 完整的报表名称例如：客户旅程表_2023-07-15
-#         handledReportName = report_name + "_" + str(today)
-#         # 检查并构造文件夹,文件路径例如：myfiles\\results\\客户旅程报表
-#         report_save_folder = "myfiles\\results\\" + report_name
-#         check_folder_exists(report_save_folder)
-#         logging.info("正在处理的报表是: " + report_name)
-#
-#         global mail_info
-#         mail_info = report
-#         mail_info["report_folder"] = report_save_folder
-#         mail_info["file_path"] = report_save_folder + "\\" + handledReportName
-#         mail_info["sqlFileLocation"] = "myfiles\\queries\\" + mail_info["sql_name"]
-#
-#         is_multi_sql = mail_info["multi_sql"]
-#         if is_multi_sql == 1:  # 多个子SQL,都执行完了然后合并
-#             logging.info("检测到要执行多个SQL,然后将csv文件合并")
-#             global sub_sql
-#             print(mail_info["sub_sql"])
-#         else:
-#             okgogogo()
-#             sendEmail()
-#
-#
-# def setup_logging(
-#         default_path="logging.yaml", default_level=logging.INFO, env_key="LOG_CFG"
-# ):
-#     """
-#     Setup logging configuration
-#     """
-#     my_path = default_path
-#     value = os.getenv(env_key, None)
-#     if value:
-#         my_path = value
-#     if os.path.exists(my_path):
-#         with open(my_path, "rt") as f:
-#             config = yaml.safe_load(f)
-#         logging.config.dictConfig(config)
-#     else:
-#         logging.basicConfig(level=default_level)
-#
-#
-# def report_task():
-#     setup_logging()
-#     logging.Formatter.converter = time.localtime
-#     logging.info("程序开始")
-#     current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-#     logging.info("当前路径：" + current_path)
-#     os.chdir(current_path)
-#     logging.info("读取config.json配置文件...")
-#     global data
-#     with open("myfiles/config.json", "r", encoding="utf-8") as file:
-#         data = json.load(file)
-#     logging.info("配置文件读取成功！\n")
-#
-#     prepareAndHandle()
-#
-#     logging.info("程序结束")
-#
-#
-# if __name__ == "__main__":
-#     try:
-#         report_task()
-#     except Exception as e:
-#         logging.error(f"main Exception: {traceback.format_exc()}")
-#         raise
+import pymysql
+import pandas as pd
+import json
+import traceback
+from datetime import datetime, timedelta
+import os
+import logging
+import yagmail
+import yaml
+import logging.config
+
+# 所有的配置
+config_data = None
+
+# 邮件发送方
+sender_info = None
+
+# 数据库连接以及语句执行相关
+mysql = None
+connections = None
+current_connection = None
+current_sql_name = None
+current_sql_content = None
+conn = None
+
+# 所有的报表
+reports = None
+
+# 当前报表
+current_report = None
+
+# 当前报表要存放的的实际位置
+current_folder_path = None
+file_path_csv = None
+
+# 今天需要处理的报表
+reports_need_send = []
+
+# 如果是需要分隔报表,则以列表形式存储所有子报表的存放位置,方便后续合并
+sub_reports = []
+
+# 合并报表的依据
+merge_basis = []
+
+WEEKDAY_EN_2_NUM = {
+    "Monday": 1,
+    "Tuesday": 2,
+    "Wednesday": 3,
+    "Thursday": 4,
+    "Friday": 5,
+    "Saturday": 6,
+    "Sunday": 7,
+}
+
+# 全局变量
+DEFAULT_LOGGING_CONFIG_PATH = "logging.yaml"
+DEFAULT_LOGGING_LEVEL = logging.INFO
+LOGGING_ENV_KEY = "LOG_CFG"
+CONFIG_PATH = "myfiles/config_test.json"
+RESULT_FOLDER = "myfiles\\results\\"
+QUERIES_FOLDER = "myfiles\\queries\\"
+
+
+def controller():
+    """
+    A function that coordinates all aspects.
+    :return:
+    """
+    preprocess_data()
+    # 针对每个报表,查看今天是否需要发送,需要发送的报表的key保存在reports_need_send列表中
+    global reports, reports_need_send
+    for report_key, report_value in reports.items():
+        when = report_value["when"]
+        if need_operation_today(when):
+            reports_need_send.append(report_key)
+    # 找出了需要发送的报表,接下来针对每个需要发送的报表,进行处理
+    # 枚举需要发送的报表
+    for x in reports_need_send:
+        global current_sql_name, current_report, current_connection
+        # clear related data
+        current_connection = None
+        current_report = reports[x]
+        cnt = 1
+        if 'exec_sql_count' in current_report:
+            cnt = current_report["exec_sql_count"]
+        # 执行cnt次SQL
+        for i in range(cnt):
+            flag = 0
+            if 'multi_sql' in current_report:
+                flag = current_report["multi_sql"]
+            # 需要分割来发送
+            if flag:
+                global merge_basis
+                merge_basis = current_report["merge_basis"]
+                # 分开执行每个sql就行,然后合并为1个,最后发送即可
+                for t in current_report["sub_sql"]:
+                    # get the sql name
+                    current_sql_name = current_report["sub_sql"][t]
+                    get_data_save_csv()
+                # 合并报表之前,将file_path_csv的值更改为需要合并到的
+                global file_path_csv
+                today = datetime.date.today()
+                file_path_csv = (
+                        current_folder_path
+                        + "\\"
+                        + current_report["report_name"]
+                        + "_"
+                        + str(today)
+                        + ".csv"
+                )
+                # merge report according to sub_reports
+                merge_report()
+            else:
+                # get the sql name
+                current_sql_name = current_report["sql_name"]
+                get_data_save_csv()
+            logging.info("To do: send email...")
+            # if mysql:
+            #     mysql.close()
+            #     print("关闭游标")
+            # if conn:
+            #     conn.close()
+            #     print("关闭链接")
+        # 执行cnt次，但是发邮件只发一次
+        send_email()
+
+
+def preprocess_data():
+    """
+    Preprocess data: all connection data, all report data.
+    :return:
+    """
+    global config_data, connections, sender_info, reports
+    config_data = load_config()
+    connections = dict()
+    for x in config_data["connections"]:
+        connections[x] = config_data["connections"][x]
+    sender_info = config_data["sender_info"]
+    reports = config_data["reports"]
+
+
+def init_con():
+    """
+    Initialize the database connection.
+    :return:
+    """
+    global current_connection
+    host = current_connection["host"]
+    port = int(current_connection["port"])
+    user = current_connection["user"]
+    password = current_connection["password"]
+    charset = current_connection["charset"]
+    global conn
+    conn = pymysql.Connect(
+        host=host,
+        port=port,
+        user=user,
+        passwd=password,
+        charset=charset,
+    )
+    cursor = conn.cursor()
+    logging.info("数据库链接成功")
+    return cursor
+
+
+def fetch_current_sql_content(sql_name):
+    """
+    Get the content of the SQL file.
+    :param sql_name: SQL file name
+    :return: the content of the file
+    """
+    sql_path = QUERIES_FOLDER + sql_name
+    global current_sql_content
+    with open(sql_path, "r", encoding="utf-8") as file:
+        current_sql_content = file.read()
+    if current_sql_content is not None:
+        logging.info("SQL语句读取成功")
+        # yesterday = datetime.now() - timedelta(days=1)
+        # yesterday = yesterday.strftime('%Y-%m-%d')
+        # current_sql_content.format(yesterday)
+        # print(current_sql_content)
+
+
+def execute_and_fetch():
+    """
+    Execute the SQL statement for the global variable and return the query result.
+    """
+    logging.info("正在执行sql语句...")
+    mysql.execute(current_sql_content)
+    des = mysql.description
+    title = [each[0] for each in des]
+    result_list = [list(each) for each in mysql.fetchall()]
+    return title, result_list
+
+
+def get_data_save_csv():
+    """
+    Call the execute_and_fetch () method
+    and
+    save the result in a csv file with a local path of file_path_csv.
+    """
+    global current_connection
+    # fetch the sql content by its name
+    fetch_current_sql_content(current_sql_name)
+    # return
+    current_connection = connections[current_report["connection"]]
+    # initialize the database connection
+    global mysql
+    mysql = init_con()
+    # create the folder to save the file
+    create_folder_exists()
+    # create the file path
+    create_csv_path()
+    # logging.info(f"当前报表:{file_path_csv}")
+    # get data and save
+    title, result_list = execute_and_fetch()
+    df_dealt = pd.DataFrame(result_list, columns=title)
+    df_dealt.to_csv(
+        file_path_csv, index=None, encoding="utf_8_sig", lineterminator="\r\n"
+    )
+    logging.info(f"成功导出报表:{file_path_csv}\n")
+
+
+def create_csv_path():
+    """
+    Create file_path_csv value.
+    """
+    today = datetime.today().strftime("%Y-%m-%d")
+    global file_path_csv
+    flag = 0
+    if 'multi_sql' in current_report:
+        flag = current_report["multi_sql"]
+    if flag:
+        # If it is a report that needs to be split, use the sql name to name it.
+        global sub_reports
+        file_path_csv = (
+                current_folder_path
+                + "\\"
+                + current_sql_name[:-4]
+                + "_"
+                + str(today)
+                + ".csv"
+        )
+        sub_reports.append(file_path_csv)
+    else:
+        # For reports that do not need to be split, use the report name to name the file.
+        file_path_csv = (
+                current_folder_path
+                + "\\"
+                + current_report["report_name"]
+                + "_"
+                + str(today)
+                + ".csv"
+        )
+
+
+def create_folder_exists():
+    """
+    Create a folder to hold the report results.
+    """
+    global current_folder_path
+    current_folder_path = RESULT_FOLDER + current_report["report_name"]
+    if not os.path.exists(current_folder_path):
+        os.makedirs(current_folder_path)
+        logging.info(f"Folder created: {current_folder_path}")
+    else:
+        logging.info(f"Folder already existed: {current_folder_path}")
+
+
+def merge_report():
+    """
+    Combine multiple reports based on sub_reports.
+    :return:
+    """
+    global sub_reports
+
+    # First read the first csv file as the underlying DataFrame.
+    base_df = pd.read_csv(sub_reports[0])
+
+    # Iterate over the remaining csv files and merge with the underlying DataFrame one by one.
+    for file_path in sub_reports[1:]:
+        df = pd.read_csv(file_path)
+        base_df = pd.merge(base_df, df, how="left", on=merge_basis)
+
+    # Save the merged DataFrame to a new csv file.
+    base_df.to_csv(file_path_csv, index=False)
+
+
+def need_operation_today(when):
+    """
+    Check whether an operation is required today,
+    and the report needs to return True, otherwise it returns False.
+    :param when: the number of weekday. eg: Monday-> 1
+    :return: True of False
+    """
+    current_date = datetime.now().date()
+    weekday_today = current_date.strftime("%A")
+    weekday_today = WEEKDAY_EN_2_NUM[weekday_today]
+    if weekday_today in when:
+        return True
+    else:
+        return False
+
+
+def setup_logging():
+    """
+    Setup logging configuration
+    """
+    my_path = DEFAULT_LOGGING_CONFIG_PATH
+    value = os.getenv(LOGGING_ENV_KEY, None)
+    if value:
+        my_path = value
+    if os.path.exists(my_path):
+        with open(my_path, "rt") as f:
+            config = yaml.safe_load(f)
+        logging.config.dictConfig(config)
+    else:
+        logging.basicConfig(level=DEFAULT_LOGGING_LEVEL)
+
+
+def load_config():
+    """
+    Import the configuration file and return the loaded file information.
+    :return: the loaded file information
+    """
+    try:
+        with open(CONFIG_PATH, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except:
+        logging.error("打开配置文件config.json异常!")
+
+
+def send_email():
+    """
+    Send mail according to the currently executed report (current_report) and file_path_csv.
+    :return:
+    """
+    global current_report
+    receivers = current_report["receivers"]
+    if not receivers:
+        logging.info("没有填写接收人邮箱信息,这个报表保存在本地即可,不需要发送邮件")
+        return
+    logging.info(f"准备发送邮件至: {receivers}")
+    cc = []
+    if 'cc' in current_report:
+        cc = current_report["cc"]
+    logging.info(f"抄送至: {cc}")
+    logging.info(f"附件: {file_path_csv}")
+
+    try:
+        mail = yagmail.SMTP(
+            user=sender_info["sender"],
+            password=sender_info["password"],
+            host=sender_info["mail_host"],
+        )
+        mail.send(
+            to=receivers,
+            cc=cc,
+            subject=current_report["subject"],
+            contents=current_report["content"],
+            attachments=file_path_csv,
+        )
+    except Exception as e:
+        logging.warning(f"邮件发送失败，发送失败的邮件: {file_path_csv} ")
+    else:
+        logging.info("邮件发送成功！\n")
+
+
+if __name__ == "__main__":
+    try:
+        setup_logging()
+        controller()
+
+    except Exception as e:
+        logging.error(f"main Exception: {traceback.format_exc()}")
+        raise

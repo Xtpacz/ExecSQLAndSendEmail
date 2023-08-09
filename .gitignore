@@ -22,6 +22,4 @@ build
 .idea/workspace.xml
 logging.log
 /myfiles/
-/test/
-main.spec
 .idea/csv-editor.xml
