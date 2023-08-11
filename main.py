@@ -23,6 +23,8 @@ current_sql_name = None
 current_sql_content = None
 conn = None
 
+exists_report = True
+
 # 所有的报表
 reports = None
 
@@ -56,7 +58,7 @@ WEEKDAY_EN_2_NUM = {
 DEFAULT_LOGGING_CONFIG_PATH = "logging.yaml"
 DEFAULT_LOGGING_LEVEL = logging.INFO
 LOGGING_ENV_KEY = "LOG_CFG"
-CONFIG_PATH = "myfiles/config_test.json"
+CONFIG_PATH = "myfiles/config.json"
 RESULT_FOLDER = "myfiles\\results\\"
 QUERIES_FOLDER = "myfiles\\queries\\"
 
@@ -76,53 +78,63 @@ def controller():
     # 找出了需要发送的报表,接下来针对每个需要发送的报表,进行处理
     # 枚举需要发送的报表
     for x in reports_need_send:
-        global current_sql_name, current_report, current_connection
+        # tag the status, if error, turn to False
+        status = True
+        global current_sql_name, current_report, current_connection, exists_report
         # clear related data
-        current_connection = None
+        # current_connection = None
         current_report = reports[x]
         cnt = 1
-        if 'exec_sql_count' in current_report:
+        exists_report = True
+        if "exec_sql_count" in current_report:
             cnt = current_report["exec_sql_count"]
+        # 针对每个报表连一次数据库，而不是在循环里面
+        current_connection = connections[current_report["connection"]]
+        # initialize the database connection
+        global mysql
+        mysql = init_con()
         # 执行cnt次SQL
         for i in range(cnt):
-            flag = 0
-            if 'multi_sql' in current_report:
-                flag = current_report["multi_sql"]
-            # 需要分割来发送
-            if flag:
-                global merge_basis
-                merge_basis = current_report["merge_basis"]
-                # 分开执行每个sql就行,然后合并为1个,最后发送即可
-                for t in current_report["sub_sql"]:
-                    # get the sql name
-                    current_sql_name = current_report["sub_sql"][t]
-                    get_data_save_csv()
-                # 合并报表之前,将file_path_csv的值更改为需要合并到的
-                global file_path_csv
-                today = datetime.date.today()
-                file_path_csv = (
+            try:
+                logging.info(f"第{i + 1}次执行SQL...")
+                flag = 0
+                if "multi_sql" in current_report:
+                    flag = current_report["multi_sql"]
+                # 需要分割来发送
+                if flag:
+                    global merge_basis
+                    merge_basis = current_report["merge_basis"]
+                    # 分开执行每个sql就行,然后合并为1个,最后发送即可
+                    for t in current_report["sub_sql"]:
+                        # get the sql name
+                        current_sql_name = current_report["sub_sql"][t]
+                        get_data_save_csv()
+                    # 合并报表之前,将file_path_csv的值更改为需要合并到的
+                    global file_path_csv
+                    today = datetime.date.today()
+                    file_path_csv = (
                         current_folder_path
                         + "\\"
                         + current_report["report_name"]
                         + "_"
                         + str(today)
                         + ".csv"
-                )
-                # merge report according to sub_reports
-                merge_report()
-            else:
-                # get the sql name
-                current_sql_name = current_report["sql_name"]
-                get_data_save_csv()
-            logging.info("To do: send email...")
-            # if mysql:
-            #     mysql.close()
-            #     print("关闭游标")
-            # if conn:
-            #     conn.close()
-            #     print("关闭链接")
+                    )
+                    # merge report according to sub_reports
+                    merge_report()
+                else:
+                    # get the sql name
+                    current_sql_name = current_report["sql_name"]
+                    get_data_save_csv()
+            except Exception as e:
+                logging.error("当前SQL语句执行出现异常,将被跳过,异常消息如下:")
+                logging.error(str(e) + "\n")
+                status = False
+                break
         # 执行cnt次，但是发邮件只发一次
-        send_email()
+        if status and exists_report:
+            logging.info("状态正常,可发邮件")
+            send_email()
 
 
 def preprocess_data():
@@ -189,7 +201,12 @@ def execute_and_fetch():
     mysql.execute(current_sql_content)
     des = mysql.description
     title = [each[0] for each in des]
-    result_list = [list(each) for each in mysql.fetchall()]
+    global exists_report
+    tmp = mysql.fetchall()
+    if not tmp:
+        logging.info("查询出结果为空,因此不生成报表\n")
+        exists_report = False
+    result_list = [list(each) for each in tmp]
     return title, result_list
 
 
@@ -199,14 +216,14 @@ def get_data_save_csv():
     and
     save the result in a csv file with a local path of file_path_csv.
     """
-    global current_connection
+    global current_connection, exists_report
     # fetch the sql content by its name
     fetch_current_sql_content(current_sql_name)
-    # return
-    current_connection = connections[current_report["connection"]]
-    # initialize the database connection
-    global mysql
-    mysql = init_con()
+    # # return
+    # current_connection = connections[current_report["connection"]]
+    # # initialize the database connection
+    # global mysql
+    # mysql = init_con()
     # create the folder to save the file
     create_folder_exists()
     # create the file path
@@ -214,11 +231,12 @@ def get_data_save_csv():
     # logging.info(f"当前报表:{file_path_csv}")
     # get data and save
     title, result_list = execute_and_fetch()
-    df_dealt = pd.DataFrame(result_list, columns=title)
-    df_dealt.to_csv(
-        file_path_csv, index=None, encoding="utf_8_sig", lineterminator="\r\n"
-    )
-    logging.info(f"成功导出报表:{file_path_csv}\n")
+    if exists_report:
+        df_dealt = pd.DataFrame(result_list, columns=title)
+        df_dealt.to_csv(
+            file_path_csv, index=None, encoding="utf_8_sig", lineterminator="\r\n"
+        )
+        logging.info(f"成功导出报表:{file_path_csv}\n")
 
 
 def create_csv_path():
@@ -228,29 +246,29 @@ def create_csv_path():
     today = datetime.today().strftime("%Y-%m-%d")
     global file_path_csv
     flag = 0
-    if 'multi_sql' in current_report:
+    if "multi_sql" in current_report:
         flag = current_report["multi_sql"]
     if flag:
         # If it is a report that needs to be split, use the sql name to name it.
         global sub_reports
         file_path_csv = (
-                current_folder_path
-                + "\\"
-                + current_sql_name[:-4]
-                + "_"
-                + str(today)
-                + ".csv"
+            current_folder_path
+            + "\\"
+            + current_sql_name[:-4]
+            + "_"
+            + str(today)
+            + ".csv"
         )
         sub_reports.append(file_path_csv)
     else:
         # For reports that do not need to be split, use the report name to name the file.
         file_path_csv = (
-                current_folder_path
-                + "\\"
-                + current_report["report_name"]
-                + "_"
-                + str(today)
-                + ".csv"
+            current_folder_path
+            + "\\"
+            + current_report["report_name"]
+            + "_"
+            + str(today)
+            + ".csv"
         )
 
 
@@ -342,7 +360,7 @@ def send_email():
         return
     logging.info(f"准备发送邮件至: {receivers}")
     cc = []
-    if 'cc' in current_report:
+    if "cc" in current_report:
         cc = current_report["cc"]
     logging.info(f"抄送至: {cc}")
     logging.info(f"附件: {file_path_csv}")
